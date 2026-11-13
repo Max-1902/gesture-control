@@ -120,4 +120,4 @@ All tuning lives in [`config/default.yaml`](config/default.yaml). Design notes: 
 
 ## License
 
-MIT
+MIT · made by [Max-1902](https://max-1902.github.io/#work)
