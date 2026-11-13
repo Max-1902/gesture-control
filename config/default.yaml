@@ -1,0 +1,74 @@
+# device: "builtin" = the Mac's own camera (never an iPhone via Continuity Camera),
+# or a name substring like "FaceTime", or an OpenCV index. `run.py --list-cameras` shows options.
+camera: { device: builtin, width: 640, height: 480, fps: 30, mirror: true }
+# backend: vision = Apple's on-device Vision framework (default), mediapipe = dev-only fallback
+tracker: { backend: vision, max_hands: 2, min_confidence: 0.6, vision_min_confidence: 0.5 }
+# beta is scaled for NORMALIZED (0..1) coords, not pixels: 0.02 would make a pinch take
+# ~9 frames (300 ms) to register; 5.0 → ~3 frames with no measurable extra rest jitter.
+filter: { min_cutoff: 1.0, beta: 5.0, d_cutoff: 1.0 }
+gestures:
+  debounce_frames: 3
+  # Engage = ONE open palm, raised toward the camera, held still. Fitted on the real palm test
+  # (recordings/*_session) vs both idle-typing sessions: 0 typing frames qualify, palm arms
+  # in ~0.8-2 s. Hand size is what separates them: a raised hand is closer to the camera.
+  engage_hold_s: 0.7
+  engage_min_extension: 0.75  # least-extended finger tip ↔ palm, in hand sizes (real palm: 0.82-0.96)
+  engage_min_openness: 0.9    # mean fingertip ↔ palm (real palm: 0.97-1.1)
+  engage_thumb_away: 0.6      # thumb tip ↔ index tip, in hand sizes (real palm: 0.72-1.17)
+  engage_max_speed: 1.0       # palm center speed, hand sizes per second (held palm: < 0.5)
+  engage_min_hand_size: 0.2   # raised toward camera (palm test 0.21-0.26; typing p99 0.23 but never with the palm shape)
+  # Retuned on Apple Vision (2026-11-11 session): relaxed hand 0.45-0.75, pinched 0.01-0.1,
+  # quick taps release to only ~0.3, so pinch_off must sit below that.
+  pinch_debounce_frames: 2    # quick taps are only 2-4 frames long
+  pinch_on: 0.2               # NOTE: typing hits low values too, so pinch is only trusted after arming
+  pinch_off: 0.28
+  # Fist = all 4 fingertips within this many hand sizes of the palm. From the live session:
+  # real fists curl p50 0.46 / p95 0.75; a pinch-drag hand p5 0.70 / p50 0.84 (old single
+  # threshold 0.8 made drags minimize the window).
+  # With Apple Vision a RELAXED hand reads curl 0.41-0.6 (old 0.6 threshold minimized by
+  # accident and then blocked every pinch). A real fist must be tight, and never pinched.
+  fist_curl_on: 0.3
+  fist_curl_off: 0.38
+  fist_min_thumb_gap: 0.35    # thumb tip ↔ index tip in a real fist (a curled pinch is below this)
+  fist_dwell_s: 1.0
+  # Pinch TAP = click (pointer freezes while pinched so it lands where you aimed);
+  # two taps within double_click_s = double click. Held longer or moved = drag.
+  tap_max_s: 0.6               # your real taps last 0.2-0.5 s
+  tap_max_hold_s: 1.2         # pinch held still longer than this then released = nothing (not a click)
+  tap_max_move: 0.25          # hand sizes of travel while pinched before it becomes a drag
+  double_click_s: 0.8
+  # Hand at the frame edge (live: 47-68% of frames in the bad runs, hand resting low):
+  # Measured on fingers/knuckles (not the wrist): good run p5 0.032; bad runs 26-40% below 0.01.
+  edge_warn_margin: 0.03      # closer than this to the edge → HUD "raise your hand"; also can't arm
+  edge_clip_margin: 0.01      # closer than this = fingers cut off → pinch/fist readings frozen
+  edge_grace_factor: 2.5      # lost at the edge → wait 2.5x longer before dropping a drag
+  lost_grace_s: 0.25          # tracking dropouts shorter than this are ignored (no dropped drags)
+  disarm_timeout_s: 3.0       # armed hand out of view this long → idle
+  armed_idle_timeout_s: 8.0   # armed but hand neither moving nor gesturing this long → idle
+  activity_speed: 0.3         # hand sizes/s of motion that counts as "still using it"
+  drag_gain: 1.0             # 1.0 = window moves exactly with the cursor
+  resize_min_scale: 0.3
+  resize_max_scale: 3.0
+control:
+  # Pointer: relative + acceleration (like a mouse). Gains are screen px per full camera width
+  # of hand travel. Slow = precise (resting jitter → sub-pixel), fast = cross all 3 screens.
+  # Small hand movements cover all displays: tune gains up for less hand travel.
+  pointer_gain_slow: 3000     # px per camera-width when moving slowly (precision)
+  pointer_gain_fast: 16000    # px per camera-width when moving fast (~0.2 camera widths crosses 3 screens)
+  pointer_speed_slow: 0.03    # camera widths per second; at/below this → slow gain
+  pointer_speed_fast: 0.5     # at/above this → fast gain
+  pointer_speed: 1.0         # multiplies both gains; the "Pointer speed" slider in Settings
+  pointer_gain_y: 1.4         # vertical boost: the hand has less room up/down than sideways
+  pointer_deadband: 0.0035    # hand must leave this radius (camera widths) before the pointer moves
+  pointer_max_gap_s: 0.15     # hand lost longer than this → resume without a jump
+  move_mouse: true          # mouse pointer follows your finger while armed (on-screen feedback)
+  max_write_hz: 60
+  follow_tau_s: 0.04        # window glide smoothing; 0 = raw, higher = smoother but laggier
+  sounds: true              # pop on grab, tink on release
+  fullscreen_drag_px: 80    # a grabbed full-screen window only leaves full screen once dragged this far
+ui:
+  show_status: true         # status pill at the top of the screen; false = only while you're using it
+debug:
+  # keep landmark recordings (no images) of the last 10 sessions for replay.py.
+  # null = on when running from source, off in the packaged app
+  record_live: null

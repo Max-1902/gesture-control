@@ -1,0 +1,20 @@
+# environments / caches
+.venv*/
+__pycache__/
+.pytest_cache/
+.DS_Store
+
+# never publish: your hand recordings, logs (contain window titles), downloaded models
+recordings/**/*.jsonl
+logs/
+models/*.task
+*.csv
+
+# git data lives in .git.nosync (iCloud must not sync it)
+.git.nosync/
+
+# build output (packaging/build_app.sh)
+dist.nosync/
+build/
+dist/
+*.spec.bak

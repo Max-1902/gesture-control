@@ -1,0 +1,11 @@
+#!/bin/zsh
+# Launcher: works from anywhere, also when symlinked into ~/.local/bin.
+ROOT="${0:A:h:h}"
+for v in "$ROOT/.venv" "$ROOT/.venv.nosync"; do
+  [[ -x "$v/bin/python" ]] && PY="$v/bin/python" && break
+done
+if [[ -z "$PY" ]]; then
+  echo "gesture-control is not set up yet. Run: $ROOT/scripts/dev-setup.sh" >&2
+  exit 1
+fi
+cd "$ROOT/src" && exec "$PY" run.py "$@"

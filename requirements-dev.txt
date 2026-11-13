@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest>=8.0
+opencv-python>=4.9     # run.py --preview / --record (developer camera window)
+pyinstaller>=6.0       # packaging/build_app.sh installs its own copy; listed for completeness
+# optional fallback tracker:  --tracker mediapipe  (also needs models/hand_landmarker.task, see tracker.py)
+# mediapipe>=0.10
