@@ -53,7 +53,7 @@ PRIVACY_URLS = {
 
 def overlay_main(conn, settings_html: str = "") -> None:   # runs in the child process
     import ApplicationServices as AS
-    from AppKit import (NSAlert, NSApplication, NSApplicationActivationPolicyAccessory,
+    from AppKit import (NSAlert, NSApplication, NSApplicationActivationPolicyRegular,
                         NSBackingStoreBuffered, NSBezierPath, NSColor, NSEvent, NSFont,
                         NSFontAttributeName, NSForegroundColorAttributeName, NSImage, NSMenu,
                         NSMenuItem, NSScreen, NSScreenSaverWindowLevel, NSStatusBar, NSString,
@@ -190,8 +190,9 @@ def overlay_main(conn, settings_html: str = "") -> None:   # runs in the child p
     def send(msg) -> None:
         try:
             conn.send(msg)
-        except (BrokenPipeError, OSError):
-            NSApplication.sharedApplication().terminate_(None)
+        except (BrokenPipeError, OSError):   # the tracking process is gone: nothing left to show
+            if not ui.get("quitting"):
+                NSApplication.sharedApplication().terminate_(None)
 
     # ----- global kill switch ⌃⌥⌘G: key monitors only work with Accessibility, so (re)install
     # the monitor whenever that permission appears ------------------------------------------
@@ -254,7 +255,7 @@ def overlay_main(conn, settings_html: str = "") -> None:   # runs in the child p
             push_settings()
         elif kind == "set":
             send(("set", {str(msg["key"]): msg["value"]}))
-        elif kind in ("toggle", "quit"):
+        elif kind in ("toggle", "quit", "restart"):
             send(kind)
         elif kind == "open" and msg.get("what") in PRIVACY_URLS:
             if msg["what"] == "accessibility":
@@ -362,6 +363,13 @@ def overlay_main(conn, settings_html: str = "") -> None:   # runs in the child p
             show_settings()   # opening the app again while it runs = open Settings
             return True
 
+        def applicationShouldTerminate_(self, app):
+            # Dock → Quit, ⌘Q, logout: tell the tracking process, which then shuts everything down
+            if not ui.get("quitting"):
+                ui["quitting"] = True
+                send("quit")
+            return 1   # NSTerminateNow
+
         def toggle_(self, sender):
             send("toggle")
 
@@ -372,7 +380,14 @@ def overlay_main(conn, settings_html: str = "") -> None:   # runs in the child p
             send("quit")
 
     app = NSApplication.sharedApplication()
-    app.setActivationPolicy_(NSApplicationActivationPolicyAccessory)   # no Dock icon
+    # Dock icon while running: click it for Settings, right-click → Quit. (The menu bar icon alone
+    # is easy to lose, e.g. behind the notch on MacBooks.)
+    app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
+    if not FROZEN:   # running from source: show the app icon instead of Python's
+        from paths import REPO
+        dev_icon = NSImage.alloc().initWithContentsOfFile_(str(REPO / "packaging" / "AppIcon.icns"))
+        if dev_icon is not None:
+            app.setApplicationIconImage_(dev_icon)
     build_hud()
     driver = Driver.alloc().init()
     app.setDelegate_(driver)
@@ -394,6 +409,20 @@ def overlay_main(conn, settings_html: str = "") -> None:   # runs in the child p
     quit_item = menu.addItemWithTitle_action_keyEquivalent_("Quit Gesture Control", "quit:", "q")
     quit_item.setTarget_(driver)
     item.setMenu_(menu)
+
+    # ----- app menu (shown while Gesture Control is the active app): Settings, on/off, Quit -----
+    main_menu = NSMenu.alloc().init()
+    app_item = main_menu.addItemWithTitle_action_keyEquivalent_("Gesture Control", None, "")
+    app_menu = NSMenu.alloc().initWithTitle_("Gesture Control")
+    for title, action, key in (("Settings…", "settings:", ","), ("Turn on / off   (⌃⌥⌘G)", "toggle:", ""),
+                               (None, None, None), ("Quit Gesture Control", "quit:", "q")):
+        if title is None:
+            app_menu.addItem_(NSMenuItem.separatorItem())
+            continue
+        mi = app_menu.addItemWithTitle_action_keyEquivalent_(title, action, key)
+        mi.setTarget_(driver)
+    app_item.setSubmenu_(app_menu)
+    app.setMainMenu_(main_menu)
     icons: dict = {}
 
     def icon(name):
@@ -420,6 +449,7 @@ def overlay_main(conn, settings_html: str = "") -> None:   # runs in the child p
             item.button().setTitle_("✋")
         status_line.setTitle_(STATUS.get(key, STATUS["idle"])[1])
         toggle_item.setTitle_("Turn on   (⌃⌥⌘G)" if off else "Turn off   (⌃⌥⌘G)")
+        app.dockTile().setBadgeLabel_("Off" if off else None)
 
     update_menu()
     NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(1 / 60, driver, "tick:", None, True)

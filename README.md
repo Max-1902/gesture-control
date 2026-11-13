@@ -29,7 +29,8 @@ It downloads the app into Applications and opens it. Then:
    Gesture Control window) and switch on **Gesture Control**. This lets it move the pointer and windows.
 3. **Hold up an open palm** toward the camera for a moment. A ring fills up, and you're in control.
 
-That's it. The ✋ in the menu bar has **Settings** and **Quit**.
+That's it. While it runs, **Gesture Control is in the Dock**: click it for Settings, right-click it → **Quit**
+(or press ⌘Q while it's in front). The ✋ in the menu bar has the same options.
 
 <details>
 <summary>Prefer a normal download instead of Terminal?</summary>
@@ -65,7 +66,7 @@ your hand is too low). Nothing happens while you type or talk; it only reacts af
 
 <img src="docs/settings.png" width="360" align="right" alt="Settings window">
 
-Click ✋ in the menu bar → **Settings…**
+Click the Gesture Control icon in the Dock (or ✋ in the menu bar → **Settings…**)
 
 - **Pointer speed:** higher means less hand movement to cross your screens.
 - **Camera:** pick an external camera if you have one.
@@ -83,11 +84,11 @@ and the app has no accounts, analytics or network access. Settings live in
 ## Troubleshooting
 
 - **The pointer doesn't move, but the pill reacts:** Accessibility isn't allowed. Open Settings from the menu bar
-  icon and click *Allow…*. If Gesture Control is already switched on in that list, switch it off and on again.
+  icon and click *Allow…*. If Gesture Control is already switched on in that list, click *Restart* next to it.
 - **"Waiting for camera access":** System Settings → Privacy & Security → Camera → switch on Gesture Control.
 - **It doesn't start:** make sure your hand is fully in view and not too close to the bottom edge of the picture,
   and that no other app (FaceTime, Zoom) is using the camera.
-- **Uninstall:** quit it from the menu bar, drag *Gesture Control* from Applications to the Trash, and optionally delete
+- **Uninstall:** quit it (right-click the Dock icon → Quit), drag *Gesture Control* from Applications to the Trash, and optionally delete
   the two folders listed under Privacy.
 
 ## For developers

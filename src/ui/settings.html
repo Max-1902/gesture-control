@@ -120,6 +120,7 @@
       <div class="row">
         <div class="label">Accessibility<div class="sub" id="ax-sub">Moves the pointer and windows for you.</div></div>
         <div id="ax-ok" class="ok hidden"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm3.5 5.2a.7.7 0 0 0-1 0L7 8.8 5.5 7.3a.7.7 0 1 0-1 1l2 2c.3.3.7.3 1 0l4-4a.7.7 0 0 0 0-1Z"/></svg>Allowed</div>
+        <button id="ax-restart" class="hidden" title="Already switched on? Restart so macOS applies it">Restart</button>
         <button id="ax-btn" class="primary hidden" data-open="accessibility">Allow…</button>
       </div>
     </div>
@@ -198,8 +199,9 @@
       : "Sees your hand. Video stays on your Mac and is never saved.";
     $("ax-ok").classList.toggle("hidden", !data.ax);
     $("ax-btn").classList.toggle("hidden", !!data.ax);
+    $("ax-restart").classList.toggle("hidden", !!data.ax || !data.login_supported);
     $("ax-sub").textContent = data.ax ? "Moves the pointer and windows for you."
-      : "Turn on Gesture Control in the list that opens. Already on? Turn it off and on again.";
+      : "Switch on Gesture Control in the list that opens. Already on? Click Restart.";
 
     if (document.activeElement !== $("speed")) {
       $("speed").value = data.pointer_speed;
@@ -232,6 +234,7 @@
   $("login").addEventListener("change", e => post({ type: "login", value: e.target.checked }));
   $("camera").addEventListener("change", e => post({ type: "set", key: "camera.device", value: e.target.value }));
   document.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => post({ type: "open", what: b.dataset.open })));
+  $("ax-restart").addEventListener("click", () => post({ type: "restart" }));
   $("logs").addEventListener("click", e => { e.preventDefault(); post({ type: "logs" }); });
   $("quit").addEventListener("click", e => { e.preventDefault(); post({ type: "quit" }); });
   document.addEventListener("keydown", e => {

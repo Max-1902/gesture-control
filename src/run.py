@@ -19,6 +19,7 @@ import threading
 import time
 import traceback
 from collections import deque
+from pathlib import Path
 
 import numpy as np
 
@@ -244,6 +245,12 @@ def main(argv: list[str] | None = None) -> None:
         camera.close()
         if preview:
             debug_view.close()
+        if stop.get("restart") and paths.FROZEN:
+            # reopen the .app once this process is gone (e.g. to pick up a fresh permission)
+            import subprocess
+            bundle = str(Path(sys.executable).resolve().parents[2])
+            subprocess.Popen(["/bin/sh", "-c", 'sleep 1; open "$0"', bundle], start_new_session=True)
+            log("restarting")
         log("quit")
         log_file.close()
 
@@ -285,6 +292,9 @@ def run_loop(args, cfg, camera: Camera, pipe: Pipeline, router, overlay, log, st
         if overlay:
             for ev in overlay.poll_events():
                 if ev == "quit":
+                    return
+                if ev == "restart":
+                    stop["restart"] = True
                     return
                 if ev == "toggle":
                     set_enabled(not pipe.fsm.enabled)
