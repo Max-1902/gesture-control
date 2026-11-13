@@ -9,6 +9,11 @@ Pinch a window, carry it across all your screens, open your hand to drop it.
   <b>macOS 12 or newer</b> · Apple Silicon and Intel · free and open source
 </p>
 
+<p align="center">
+  <a href="docs/gesture-control-promo.mp4"><img src="docs/demo.gif" width="720" alt="Demo: hold up a palm to start, pinch and hold to carry a window, make a fist to minimize, pinch with both hands to resize"></a><br>
+  <sub><a href="docs/gesture-control-promo.mp4">Watch the full video (27 s)</a></sub>
+</p>
+
 ## Install (1 minute)
 
 Open **Terminal** (press ⌘ Space, type *Terminal*, press Enter), paste this line and press Enter:
