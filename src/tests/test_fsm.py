@@ -70,6 +70,21 @@ def test_short_palm_does_not_arm():
     assert 0.3 < sim.fsm.arm_progress < 1.0
 
 
+def test_palm_arms_through_a_noisy_frame():
+    # Vision drops a landmark now and then: one bad frame must not restart the hold
+    sim = Sim()
+    palm = lambda i: make_hand("fist" if i == 12 else "open", center=(0.5, 0.8), scale=2.5)
+    sim.run(1.0, palm)
+    assert sim.fsm.state == State.HOVER
+
+
+def test_palm_hold_restarts_after_a_real_break():
+    sim = Sim()
+    palm = lambda i: make_hand("fist" if 12 <= i < 24 else "open", center=(0.5, 0.8), scale=2.5)
+    sim.run(1.0, palm)   # 0.4 s fist in the middle: neither half is long enough
+    assert sim.fsm.state == State.IDLE
+
+
 def test_moving_palm_does_not_arm():
     sim = Sim()
     sim.run(2.0, lambda i: make_hand("open", center=(0.3 + 0.01 * i, 0.8), scale=2.5))  # 1.2 hand sizes/s

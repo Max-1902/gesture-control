@@ -67,6 +67,7 @@ class _Side:
         self.prev_center: tuple[float, float, float] | None = None  # x, y, t
         self.speed = float("inf")
         self.open_since: float | None = None
+        self.open_last: float = -1e9      # last frame that looked like an open palm
         self.last_seen = -1e9
 
     def reset(self) -> None:
@@ -203,10 +204,13 @@ class GestureFSM:
         for side, s in self.sides.items():
             h = ff.hands.get(side)
             if h is None or not self._is_open_palm(s, h):
-                s.open_since = None
+                # a noisy frame or two (one landmark jumps) must not restart the hold
+                if s.open_since is not None and t - s.open_last > self.g.get("engage_grace_s", 0.25):
+                    s.open_since = None
                 continue
             if s.open_since is None:
                 s.open_since = t
+            s.open_last = t
             held = t - s.open_since
             best = max(best, held / self.g["engage_hold_s"])
             if held >= self.g["engage_hold_s"]:

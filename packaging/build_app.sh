@@ -50,9 +50,25 @@ LEAKS=$(grep -r -l -a -F -e "$HOME" -e "$(id -un)" -e "$(id -F 2>/dev/null || ec
         -e "$(git config --global user.email 2>/dev/null || echo __none__)" "$APP" || true)
 [[ -z "$LEAKS" ]] || { echo "!! personal data found in:"; echo "$LEAKS"; exit 1; }
 
-echo "→ Signing (ad hoc)"
+# A self-signed "Gesture Control" certificate in the login keychain gives every build the same
+# identity, so Camera/Accessibility permissions survive updates. (An ad-hoc signature is tied
+# to the exact build: friends would have to allow both again after each update.)
+SIGN_ID=$(security find-identity -p codesigning | awk '/"Gesture Control"/ {print $2; exit}')
 xattr -cr "$APP"
-codesign --force --deep --sign - "$APP"
+if [[ -n "$SIGN_ID" ]]; then
+  echo "→ Signing (Gesture Control certificate)"
+  # the keychain sometimes refuses one call (errSecInternalComponent): retry
+  for try in 1 2 3; do
+    codesign --force --deep --sign "$SIGN_ID" "$APP" && break
+    [[ $try == 3 ]] && { echo "!! signing failed"; exit 1; }
+    sleep 2
+  done
+  SIGNER=$(codesign -dvv "$APP" 2>&1)
+  [[ "$SIGNER" == *$'\nAuthority=Gesture Control\n'* ]] || { echo "!! wrong signer"; exit 1; }
+else
+  echo "→ Signing (ad hoc: no \"Gesture Control\" certificate, permissions will reset on update)"
+  codesign --force --deep --sign - "$APP"
+fi
 codesign --verify --deep --strict "$APP"
 
 echo "→ Smoke test (the app imports its whole camera/UI stack)"

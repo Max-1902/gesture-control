@@ -184,7 +184,7 @@
     s = data;
     const camOk = data.camera_state === "running" || data.camera_state === "paused";
     let status = data.status_text || "";
-    if (data.camera_state === "denied") status = "Waiting for camera access";
+    if (data.camera_state === "denied" || data.camera_state === "asking") status = "Waiting for camera access";
     else if (data.camera_state === "missing") status = "No camera found";
     else if (!data.ax) status = "Waiting for Accessibility access";
     $("status").textContent = status;
@@ -195,6 +195,7 @@
     $("cam-btn").classList.toggle("hidden", camOk || data.camera_state === "missing");
     $("cam-sub").textContent = data.camera_state === "missing" ? "No camera found. Connect one and reopen the app."
       : data.camera_state === "error" ? (data.camera_error || "The camera could not be opened.")
+      : data.camera_state === "asking" ? "Click Allow, then OK in the camera prompt."
       : data.camera_state === "denied" ? "Turn on Gesture Control in the list that opens."
       : "Sees your hand. Video stays on your Mac and is never saved.";
     $("ax-ok").classList.toggle("hidden", !data.ax);

@@ -12,8 +12,9 @@ gestures:
   # (recordings/*_session) vs both idle-typing sessions: 0 typing frames qualify, palm arms
   # in ~0.8-2 s. Hand size is what separates them: a raised hand is closer to the camera.
   engage_hold_s: 0.7
-  engage_min_extension: 0.75  # least-extended finger tip ↔ palm, in hand sizes (real palm: 0.82-0.96)
-  engage_min_openness: 0.9    # mean fingertip ↔ palm (real palm: 0.97-1.1)
+  engage_grace_s: 0.25        # failing frames shorter than this don't restart the hold (Vision jitter)
+  engage_min_extension: 0.75  # least-extended of index/middle/ring tip ↔ palm, in hand sizes (pinky ignored)
+  engage_min_openness: 0.85   # mean fingertip ↔ palm, pinky included (Vision palm: 0.86-1.2)
   engage_thumb_away: 0.6      # thumb tip ↔ index tip, in hand sizes (real palm: 0.72-1.17)
   engage_max_speed: 1.0       # palm center speed, hand sizes per second (held palm: < 0.5)
   engage_min_hand_size: 0.2   # raised toward camera (palm test 0.21-0.26; typing p99 0.23 but never with the palm shape)

@@ -29,9 +29,14 @@ if pgrep -f "$APP_NAME.app/Contents/MacOS" >/dev/null; then
   sleep 1
 fi
 if [[ -d "$DEST/$APP_NAME.app" ]]; then
+  # Builds up to 1.0.1 were signed ad hoc: macOS tied their permissions to that exact build, so
+  # the old Camera/Accessibility switches show ON but don't apply to the new one. Clear them so
+  # macOS asks fresh. Newer builds share one signature and keep their permissions.
+  if codesign -dr - "$DEST/$APP_NAME.app" 2>&1 | grep -q cdhash; then
+    tccutil reset Accessibility "$BUNDLE_ID" >/dev/null 2>&1 || true
+    tccutil reset Camera "$BUNDLE_ID" >/dev/null 2>&1 || true
+  fi
   rm -rf "$DEST/$APP_NAME.app"   # older version; your settings live elsewhere and are kept
-  # macOS ties permissions to the exact build: clear the old entry so the new one can be allowed
-  tccutil reset Accessibility "$BUNDLE_ID" >/dev/null 2>&1 || true
 fi
 mv "$TMP/$APP_NAME.app" "$DEST/"
 xattr -dr com.apple.quarantine "$DEST/$APP_NAME.app" 2>/dev/null || true

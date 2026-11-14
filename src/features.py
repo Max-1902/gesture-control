@@ -25,7 +25,8 @@ class HandFeatures:
     curl: float               # max fingertip ↔ palm center / hand_size (small = fist)
     index_extension: float    # index tip ↔ palm / hand_size
     others_extension: float   # mean(middle, ring, pinky) tip ↔ palm / hand_size
-    min_extension: float      # LEAST extended of the 4 fingers (open palm needs all of them out)
+    min_extension: float      # LEAST extended of index/middle/ring (the pinky is left out: Vision
+                              # reads an outstretched pinky tip close to the palm, median 0.72)
     upright: float            # (wrist_y - mean fingertip_y) / hand_size; >0 = fingers point up
     pointer_x: float          # index fingertip (precise but jittery, moves when pinching)
     pointer_y: float
@@ -73,7 +74,7 @@ def hand_features(hand: Hand) -> HandFeatures:
         curl=float(tip_dist[1:].max()),   # ignore thumb: it sits near the palm even when open
         index_extension=float(tip_dist[1]),
         others_extension=float(tip_dist[2:].mean()),
-        min_extension=float(tip_dist[1:].min()),
+        min_extension=float(tip_dist[1:4].min()),
         upright=float((p[WRIST, 1] - p[list(FINGERTIPS[1:]), 1].mean()) / size),
         pointer_x=float(p[INDEX_TIP, 0]),
         pointer_y=float(p[INDEX_TIP, 1]),

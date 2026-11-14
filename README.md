@@ -85,9 +85,13 @@ and the app has no accounts, analytics or network access. Settings live in
 
 - **The pointer doesn't move, but the pill reacts:** Accessibility isn't allowed. Open Settings from the menu bar
   icon and click *Allow…*. If Gesture Control is already switched on in that list, click *Restart* next to it.
-- **"Waiting for camera access":** System Settings → Privacy & Security → Camera → switch on Gesture Control.
-- **It doesn't start:** make sure your hand is fully in view and not too close to the bottom edge of the picture,
-  and that no other app (FaceTime, Zoom) is using the camera.
+- **"Waiting for camera access":** open Settings (click the Dock icon) and click *Allow…* next to Camera. If it was
+  turned off before: System Settings → Privacy & Security → Camera → switch on Gesture Control.
+- **Updating from 1.0.1 or older:** the installer clears the old permissions, so allow Camera and Accessibility
+  once more. Later updates keep them.
+- **It doesn't start:** hold your palm up fairly close to the camera (about a forearm's length), fingers spread,
+  with the whole hand in view and not too close to the bottom edge of the picture. Make sure no other app
+  (FaceTime, Zoom) is using the camera.
 - **Uninstall:** quit it (right-click the Dock icon → Quit), drag *Gesture Control* from Applications to the Trash, and optionally delete
   the two folders listed under Privacy.
 

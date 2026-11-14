@@ -235,6 +235,18 @@ def overlay_main(conn, settings_html: str = "") -> None:   # runs in the child p
             pass
 
     # ----- settings window (WKWebView) -------------------------------------------------------
+    asked_camera = {"done": False}
+
+    def ask_camera() -> None:
+        """The camera prompt, asked from this process: it is the foreground (Dock) app, so macOS
+        shows the prompt in front. The tracker process only polls the answer."""
+        import AVFoundation as AV
+        if AV.AVCaptureDevice.authorizationStatusForMediaType_(AV.AVMediaTypeVideo) != AV.AVAuthorizationStatusNotDetermined:
+            return
+        asked_camera["done"] = True
+        NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
+        AV.AVCaptureDevice.requestAccessForMediaType_completionHandler_(AV.AVMediaTypeVideo, lambda ok: None)
+
     def push_settings() -> None:
         web = ui["web"]
         if web is None or not settings or not ui["ready"] or not ui["win"].isVisible():
@@ -257,6 +269,8 @@ def overlay_main(conn, settings_html: str = "") -> None:   # runs in the child p
             send(("set", {str(msg["key"]): msg["value"]}))
         elif kind in ("toggle", "quit", "restart"):
             send(kind)
+        elif kind == "open" and msg.get("what") == "camera" and settings.get("camera_state") == "asking":
+            ask_camera()   # never answered for this build: show the prompt instead of an empty list
         elif kind == "open" and msg.get("what") in PRIVACY_URLS:
             if msg["what"] == "accessibility":
                 AS.AXIsProcessTrustedWithOptions({AS.kAXTrustedCheckOptionPrompt: True})
@@ -331,6 +345,8 @@ def overlay_main(conn, settings_html: str = "") -> None:   # runs in the child p
                             settings.clear()
                             settings.update(msg[1])
                             changed = True
+                            if settings.get("camera_state") == "asking" and not asked_camera["done"]:
+                                ask_camera()
                             push_settings()
                         elif msg[0] == "show_settings":
                             show_settings()

@@ -71,6 +71,7 @@ class Camera:
                 if perm == "unknown":
                     if not self._asked:   # the system prompt; answered asynchronously
                         self._asked = True
+                        self.log("camera: waiting for permission (macOS prompt)")
                         threading.Thread(target=request_camera_permission, daemon=True).start()
                     self.state = "asking"
                     return
