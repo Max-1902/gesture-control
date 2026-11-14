@@ -47,5 +47,5 @@ cat <<'MSG'
 
 Next: allow Camera and Accessibility when asked (the settings window shows what's missing).
 Then hold up an open palm toward the camera for a moment to start.
-Look for the ✋ in the menu bar for settings and Quit.
+It sits in the Dock while running: click it for settings, right-click → Quit.
 MSG
