@@ -91,6 +91,7 @@ class GestureFSM:
 
         # HUD-facing outputs
         self.cursor: tuple[float, float] | None = None
+        self.distance_scale = 1.0   # pointer gain multiplier: <1 when the hand is close (looks bigger)
         self.arm_progress = 0.0
         self.dwell_progress = 0.0
 
@@ -128,7 +129,7 @@ class GestureFSM:
         if self.state != State.IDLE and self.primary in ff.hands:
             h = ff.hands[self.primary]
             ref = self._size_ref
-            if ref is not None and not (0.55 * ref <= h.hand_size <= 1.8 * ref):
+            if ref is not None and not (0.55 * ref <= h.hand_size <= 2.5 * ref):
                 # phantom detection (live: a "hand" 1/4 the size pinched and grabbed a
                 # full-screen app): treat as a dropout, never let it touch pinch state
                 ff = replace(ff, hands={k: v for k, v in ff.hands.items() if k != self.primary})
@@ -174,12 +175,20 @@ class GestureFSM:
 
     def _is_open_palm(self, s: _Side, h: HandFeatures) -> bool:
         g = self.g
-        return (h.edge_margin >= g.get("edge_warn_margin", 0.05)   # start with the whole hand in view
+        return (h.edge_margin >= self._warn_margin(h)   # start with the whole hand in view
                 and h.min_extension >= g["engage_min_extension"]
                 and h.openness >= g["engage_min_openness"]
                 and h.hand_size >= g["engage_min_hand_size"]
                 and h.pinch >= g["engage_thumb_away"]
                 and s.speed <= g["engage_max_speed"])
+
+    def _warn_margin(self, h: HandFeatures) -> float:
+        """Closer than this to the frame edge = 'move your hand'. A big hand (you sit close) fills
+        the frame, so the margin is relaxed to just 'fingers not cut off'."""
+        g = self.g
+        if h.hand_size >= g.get("close_hand_size", 0.3):
+            return g.get("edge_clip_margin", 0.015)
+        return g.get("edge_warn_margin", 0.05)
 
     def _grace(self) -> float:
         """A hand that slid out at the frame edge usually comes right back: wait longer."""
@@ -194,8 +203,12 @@ class GestureFSM:
             if self.state in (State.IDLE,):
                 self.hint = None
             return   # keep the last hint while the hand is briefly gone (it likely left at that edge)
-        warn = self.g.get("edge_warn_margin", 0.05)
-        self.hint = None if h.edge_margin >= warn else ("low" if h.edge_side == "bottom" else "edge")
+        if h.edge_margin >= self._warn_margin(h):
+            self.hint = None
+        elif h.hand_size >= self.g.get("close_hand_size", 0.3):
+            self.hint = "close"   # big AND cut off: too near the camera, not just off-center
+        else:
+            self.hint = "low" if h.edge_side == "bottom" else "edge"
 
     # ----- IDLE -------------------------------------------------------------------------------
 
@@ -249,7 +262,7 @@ class GestureFSM:
         # a hand that slid out at the edge usually comes right back: wait longer before dropping a drag
         grace = self._grace()
         if h is not None:
-            self._last_edge = h.edge_margin < g.get("edge_warn_margin", 0.05)
+            self._last_edge = h.edge_margin < self._warn_margin(h)
         if h is None and t - self._last_seen <= grace:
             return []   # brief tracking dropout: hold everything as-is, don't drop the window
         if h is None:
@@ -270,6 +283,10 @@ class GestureFSM:
         if s.speed > g.get("activity_speed", 0.3) and s.speed != float("inf"):
             self._last_activity = t   # moving the pointer counts as using it
         self.cursor = (h.knuckle_x, h.knuckle_y)
+        ref = self._size_ref or h.hand_size
+        # same physical hand travel → same pointer travel, whatever the distance to the camera
+        self.distance_scale = float(np.clip(g.get("pointer_ref_hand_size", 0.2) / max(ref, 1e-3),
+                                            g.get("pointer_min_scale", 0.5), 1.0))
         self._history.append(self.cursor)
         other = ff.hands.get("Left" if self.primary == "Right" else "Right")
         other_s = self.sides["Left" if self.primary == "Right" else "Right"]

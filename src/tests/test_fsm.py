@@ -373,3 +373,40 @@ def test_zero_false_arms_on_idle_recordings(path):
         _, _, intents = pipe.step(fr)
         assert pipe.fsm.state == State.IDLE, f"false arm at t={fr.t:.2f}s"
         assert intents == []
+
+
+# --- sitting close (big hand) --------------------------------------------------------------------
+
+def _edge_hand(scale: float, margin: float):
+    """Open palm of the given scale whose leftmost gesture point is `margin` from the frame edge."""
+    h0 = make_hand("open", "Right", (0.5, 0.5), scale)
+    left, top = float(h0.landmarks[2:, 0].min()), float(h0.landmarks[2:, 1].min())
+    return lambda i: make_hand("open", "Right", (0.5 - left + margin, 0.5 - top + 0.08), scale)
+
+
+def test_big_hand_near_edge_can_still_arm():
+    sim = Sim()
+    sim.run(1.5, _edge_hand(3.5, 0.02))   # hand size 0.35: you sit close, fingers 2% from the edge
+    assert sim.fsm.state == State.HOVER
+
+
+def test_normal_hand_near_edge_still_needs_room():
+    sim = Sim()
+    sim.run(1.5, _edge_hand(2.0, 0.02))   # hand size 0.2 at the same margin: just move it inward
+    assert sim.fsm.state == State.IDLE
+    assert sim.fsm.hint == "edge"
+
+
+def test_big_hand_cut_off_says_too_close():
+    sim = Sim()
+    sim.run(0.5, _edge_hand(3.5, 0.0))
+    assert sim.fsm.hint == "close"
+
+
+def test_pointer_gain_scales_down_for_close_hand():
+    near, normal = Sim(), Sim()
+    near.run(1.5, _edge_hand(4.0, 0.05))
+    normal.run(1.5, lambda i: make_hand("open", "Right", (0.5, 0.5), 2.0))
+    assert near.fsm.state == normal.fsm.state == State.HOVER
+    assert normal.fsm.distance_scale == pytest.approx(1.0)
+    assert near.fsm.distance_scale == pytest.approx(0.5)

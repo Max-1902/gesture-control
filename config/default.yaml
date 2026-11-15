@@ -42,6 +42,7 @@ gestures:
   # Measured on fingers/knuckles (not the wrist): good run p5 0.032; bad runs 26-40% below 0.01.
   edge_warn_margin: 0.03      # closer than this to the edge → HUD "raise your hand"; also can't arm
   edge_clip_margin: 0.01      # closer than this = fingers cut off → pinch/fist readings frozen
+  close_hand_size: 0.3        # hand this big = you sit close: only 'fingers not cut off' is required
   edge_grace_factor: 2.5      # lost at the edge → wait 2.5x longer before dropping a drag
   lost_grace_s: 0.25          # tracking dropouts shorter than this are ignored (no dropped drags)
   disarm_timeout_s: 3.0       # armed hand out of view this long → idle
@@ -59,6 +60,8 @@ control:
   pointer_speed_slow: 0.03    # camera widths per second; at/below this → slow gain
   pointer_speed_fast: 0.5     # at/above this → fast gain
   pointer_speed: 1.0         # multiplies both gains; the "Pointer speed" slider in Settings
+  pointer_ref_hand_size: 0.2  # hand size at which the gains above apply; bigger (closer) hand → gains scaled down
+  pointer_min_scale: 0.5      # …but never below this fraction
   pointer_gain_y: 1.4         # vertical boost: the hand has less room up/down than sideways
   pointer_deadband: 0.0035    # hand must leave this radius (camera widths) before the pointer moves
   pointer_max_gap_s: 0.15     # hand lost longer than this → resume without a jump

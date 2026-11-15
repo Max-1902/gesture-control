@@ -31,6 +31,7 @@ STATE_STYLE = {   # state → (ring rgba, fill rgba or None, radius)
 
 HINTS = {
     "low":  ((1.0, 0.6, 0.1, 1.0), "Hand too low  ·  raise it a bit so the camera sees all of it"),
+    "close": ((1.0, 0.6, 0.1, 1.0), "Hand too close to the camera  ·  move it back a little"),
     "edge": ((1.0, 0.6, 0.1, 1.0), "Hand at the edge of the camera view  ·  move it toward the center"),
 }
 

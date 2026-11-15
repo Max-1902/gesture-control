@@ -67,7 +67,7 @@ class PointerMapper:
         """Re-anchor without moving (pointer frozen while pinching)."""
         self._anchor, self._t = [nx, ny * CAMERA_ASPECT], t
 
-    def step(self, nx: float, ny: float, t: float) -> tuple[float, float]:
+    def step(self, nx: float, ny: float, t: float, scale: float = 1.0) -> tuple[float, float]:
         y = ny * CAMERA_ASPECT   # equalize x/y: both in camera-width units
         if self._anchor is None or t <= self._t:
             if self._anchor is None:
@@ -89,7 +89,7 @@ class PointerMapper:
         self._anchor[1] += my
         self._speed = 0.5 * self._speed + 0.5 * math.hypot(mx, my) / dt   # steadier gain
         g = accel_gain(self._speed, self.c)
-        return mx * g, my * g * self.c.get("pointer_gain_y", 1.0)
+        return mx * g * scale, my * g * scale * self.c.get("pointer_gain_y", 1.0)
 
 
 def mouse_location() -> tuple[float, float]:
@@ -114,6 +114,7 @@ class Router:
         self._state = State.IDLE
         self._arm = self._dwell = 0.0
         self._hint: str | None = None
+        self._scale = 1.0
         self.overlay = overlay
         self.enabled = True   # kill switch state, shown on the HUD
 
@@ -145,11 +146,12 @@ class Router:
 
     def submit(self, intents: list[Intent], cursor: tuple[float, float] | None, state: State,
                t: float | None = None, arm: float = 0.0, dwell: float = 0.0,
-               hint: str | None = None) -> None:
+               hint: str | None = None, scale: float = 1.0) -> None:
         for it in intents:
             self._q.put(it)
         with self._lock:
             self._state, self._arm, self._dwell, self._hint = state, arm, dwell, hint
+            self._scale = scale
             self._active = state in (State.HOVER, State.PRESS, State.GRABBED, State.ZOOM)
             self._frozen = state == State.PRESS   # fingers together: hold the pointer still
             if cursor and self._active:
@@ -172,7 +174,7 @@ class Router:
 
     def _update_target(self) -> None:
         with self._lock:
-            sample, active, frozen = self._sample, self._active, self._frozen
+            sample, active, frozen, scale = self._sample, self._active, self._frozen, self._scale
         if not active or sample is None:
             self._mapper.reset()
             if not active:
@@ -184,7 +186,7 @@ class Router:
         if frozen:
             self._mapper.rebase(*sample)   # unfreezing must not jump
             return
-        dx, dy = self._mapper.step(*sample)
+        dx, dy = self._mapper.step(*sample, scale)
         if dx or dy:
             self._target = list(self.displays.clamp(self._target[0] + dx, self._target[1] + dy))
 

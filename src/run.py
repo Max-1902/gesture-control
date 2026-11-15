@@ -355,7 +355,7 @@ def run_loop(args, cfg, camera: Camera, pipe: Pipeline, router, overlay, log, st
             continue
         if router:
             router.submit(intents, pipe.fsm.cursor, pipe.fsm.state, t_cap,
-                          arm=pipe.fsm.arm_progress, dwell=pipe.fsm.dwell_progress, hint=pipe.fsm.hint)
+                          arm=pipe.fsm.arm_progress, dwell=pipe.fsm.dwell_progress, hint=pipe.fsm.hint, scale=pipe.fsm.distance_scale)
         else:
             for it in intents:
                 if not isinstance(it, Move):
